@@ -16,6 +16,11 @@ import java.io.IOException;
  */
 public interface YarnSchedulerInterceptor {
 
+    /**
+     * 
+     * CallBackFilter
+     * 
+     */
     interface CallBackFilter {
       /**
        * Method to determine if any other methods in {@link YarnSchedulerInterceptor}

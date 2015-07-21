@@ -10,7 +10,6 @@ import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.CommandInfo.URI;
 import org.apache.mesos.Protos.ExecutorID;
@@ -27,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.nio.charset.Charset;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -65,6 +66,35 @@ public interface TaskFactory {
             this.taskUtils = taskUtils;
         }
 
+        //Utility function to get the first NMPorts.expectedNumPorts number of ports of an offer
+        private static NMPorts getPorts(Offer offer) {
+            HashSet<Long> ports = new HashSet<>();
+            for (Resource resource : offer.getResourcesList()){
+                if (resource.getName().equals("ports")){
+                    /*
+                    ranges.getRangeList() returns a list of ranges, each range specifies a begin and end only.
+                    so must loop though each range until we get all ports needed.  We exit each loop as soon as all
+                    ports are found so bounded by NMPorts.expectedNumPorts.
+                    */
+                    Iterator<Value.Range> itr = resource.getRanges().getRangeList().iterator();
+                    while (itr.hasNext() && ports.size() < NMPorts.expectedNumPorts()) {
+                        Value.Range range = itr.next();
+                        if (range.getBegin() <= range.getEnd()) {
+                            long i = range.getBegin();
+                            while (i <= range.getEnd() && ports.size() < NMPorts.expectedNumPorts()) {
+                                ports.add(i);
+                                i++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Preconditions.checkState(ports.size() == NMPorts.expectedNumPorts(), "Not enough ports in offer");
+            Long [] portArray = ports.toArray(new Long [ports.size()]);
+            return new NMPorts(portArray);
+        }
+
         private static String getFileName(String uri) {
             int lastSlash = uri.lastIndexOf('/');
             if (lastSlash == -1) {
@@ -95,7 +125,7 @@ public interface TaskFactory {
             }
         }
 
-        private Protos.CommandInfo getCommandInfo() {
+        private CommandInfo getCommandInfo() {
             MyriadExecutorConfiguration myriadExecutorConfiguration = cfg.getMyriadExecutorConfiguration();
             CommandInfo.Builder commandInfo = CommandInfo.newBuilder();
             if (myriadExecutorConfiguration.getNodeManagerUri().isPresent()) {
@@ -184,6 +214,9 @@ public interface TaskFactory {
             Objects.requireNonNull(offer, "Offer should be non-null");
             Objects.requireNonNull(nodeTask, "NodeTask should be non-null");
 
+            NMPorts ports = getPorts(offer);
+            LOGGER.debug(ports.toString());
+
             NMProfile profile = nodeTask.getProfile();
             NMTaskConfig nmTaskConfig = new NMTaskConfig();
             nmTaskConfig.setAdvertisableCpus(profile.getCpus());
@@ -191,6 +224,10 @@ public interface TaskFactory {
             NodeManagerConfiguration nodeManagerConfiguration = this.cfg.getNodeManagerConfiguration();
             nmTaskConfig.setJvmOpts(nodeManagerConfiguration.getJvmOpts().orNull());
             nmTaskConfig.setCgroups(nodeManagerConfiguration.getCgroups().or(Boolean.FALSE));
+            nmTaskConfig.setRpcPort(ports.getRpcPort());
+            nmTaskConfig.setLocalizerPort(ports.getLocalizerPort());
+            nmTaskConfig.setWebAppHttpPort(ports.getWebAppHttpPort());
+            nmTaskConfig.setShufflePort(ports.getShufflePort());
             nmTaskConfig.setYarnEnvironment(cfg.getYarnEnvironment());
 
             // if RM's hostname is passed in as a system property, pass it along
@@ -214,10 +251,10 @@ public interface TaskFactory {
 
             String taskConfigJSON = new Gson().toJson(nmTaskConfig);
 
-            Scalar taskMemory = Value.Scalar.newBuilder()
+            Scalar taskMemory = Scalar.newBuilder()
                     .setValue(taskUtils.getTaskMemory(profile))
                     .build();
-            Scalar taskCpus = Value.Scalar.newBuilder()
+            Scalar taskCpus = Scalar.newBuilder()
                     .setValue(taskUtils.getTaskCpus(profile))
                     .build();
             ExecutorInfo executorInfo = getExecutorInfoForSlave(offer.getSlaveId());
@@ -227,7 +264,6 @@ public interface TaskFactory {
                     .setTaskId(taskId)
                     .setSlaveId(offer.getSlaveId());
 
-            // TODO (mohit): Configure ports for multi-tenancy
             ByteString data = ByteString.copyFrom(taskConfigJSON.getBytes(Charset.defaultCharset()));
             return taskBuilder
                     .addResources(
@@ -240,6 +276,26 @@ public interface TaskFactory {
                                     .setType(Value.Type.SCALAR)
                                     .setScalar(taskMemory)
                                     .build())
+                    .addResources(
+                            Resource.newBuilder().setName("ports")
+                                    .setType(Value.Type.RANGES)
+                                    .setRanges(Value.Ranges.newBuilder()
+                                            .addRange(Value.Range.newBuilder()
+                                                    .setBegin(ports.getRpcPort())
+                                                    .setEnd(ports.getRpcPort())
+                                                    .build())
+                                            .addRange(Value.Range.newBuilder()
+                                                    .setBegin(ports.getLocalizerPort())
+                                                    .setEnd(ports.getLocalizerPort())
+                                                    .build())
+                                            .addRange(Value.Range.newBuilder()
+                                                    .setBegin(ports.getWebAppHttpPort())
+                                                    .setEnd(ports.getWebAppHttpPort())
+                                                    .build())
+                                            .addRange(Value.Range.newBuilder()
+                                                    .setBegin(ports.getShufflePort())
+                                                    .setEnd(ports.getShufflePort())
+                                                    .build())))
                     .setExecutor(executorInfo).setData(data).build();
         }
 
