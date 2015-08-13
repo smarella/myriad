@@ -7,6 +7,7 @@ import com.ebay.myriad.scheduler.TaskFactory;
 import com.ebay.myriad.scheduler.yarn.interceptor.BaseInterceptor;
 import com.ebay.myriad.scheduler.yarn.interceptor.InterceptorRegistry;
 import com.ebay.myriad.state.SchedulerState;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.HashSet;
@@ -130,7 +131,8 @@ public class YarnNodeCapacityManager extends BaseInterceptor {
      * capacity depending on what portion of the consumed offers were actually
      * used.
      */
-    private void handleContainerAllocation(RMNode rmNode) {
+    @VisibleForTesting
+    protected void handleContainerAllocation(RMNode rmNode) {
       String host = rmNode.getNodeID().getHost();
 
       ConsumedOffer consumedOffer = offerLifecycleMgr.drainConsumedOffer(host);
