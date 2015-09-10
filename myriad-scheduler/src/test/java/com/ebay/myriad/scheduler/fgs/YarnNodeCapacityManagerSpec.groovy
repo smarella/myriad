@@ -3,6 +3,7 @@ package com.ebay.myriad.scheduler.fgs
 import com.ebay.myriad.scheduler.TaskFactory
 import com.ebay.myriad.scheduler.TaskUtils
 import com.ebay.myriad.scheduler.yarn.interceptor.InterceptorRegistry
+import com.ebay.myriad.state.NodeTask
 import com.ebay.myriad.state.SchedulerState
 import org.apache.hadoop.yarn.api.records.ContainerState
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.NodeResourceUpdateSchedulerEvent
@@ -11,15 +12,7 @@ import org.apache.mesos.Protos
 
 /**
  *
-<<<<<<< HEAD
-<<<<<<< HEAD
  * Tests for YarnNodeCapacityManager
-=======
- * @author: smarella
->>>>>>> 2951b30... Unit tests for FGS
-=======
- * Tests for YarnNodeCapacityManager
->>>>>>> e8a3372... Removed 'author' tags from new files
  *
  */
 class YarnNodeCapacityManagerSpec extends FGSTestBaseSpec {
@@ -108,10 +101,18 @@ class YarnNodeCapacityManagerSpec extends FGSTestBaseSpec {
 
   YarnNodeCapacityManager getYarnNodeCapacityManager() {
     def registry = Mock(InterceptorRegistry)
-    def state = Mock(SchedulerState)
-    def taskFactory = new TaskFactory.NMTaskFactoryImpl(cfg, new TaskUtils(cfg))
+    def executorInfo = Protos.ExecutorInfo.newBuilder()
+        .setExecutorId(Protos.ExecutorID.newBuilder().setValue("some_id"))
+        .setCommand(Protos.CommandInfo.newBuilder())
+        .build()
+    def nodeTask = Mock(NodeTask) {
+      getExecutorInfo() >> executorInfo
+    }
+    def state = Mock(SchedulerState) {
+      getNodeTask(_) >> nodeTask
+    }
     return new YarnNodeCapacityManager(registry, yarnScheduler, rmContext,
-        myriadDriver, taskFactory, offerLifecycleManager, nodeStore, state)
+        myriadDriver, offerLifecycleManager, nodeStore, state)
 
   }
 }

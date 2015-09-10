@@ -26,14 +26,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  *
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
- * Author: smarella
- *
->>>>>>> 2951b30... Unit tests for FGS
-=======
->>>>>>> e8a3372... Removed 'author' tags from new files
  * Base class for FGS tests.
  *
  */

@@ -13,15 +13,7 @@ import org.slf4j.Logger
 
 /**
  *
-<<<<<<< HEAD
-<<<<<<< HEAD
  * Tests for NMHeartBeatHandler
-=======
- * @author: smarella
->>>>>>> 2951b30... Unit tests for FGS
-=======
- * Tests for NMHeartBeatHandler
->>>>>>> e8a3372... Removed 'author' tags from new files
  *
  */
 class NMHeartBeatHandlerSpec extends FGSTestBaseSpec {
@@ -62,7 +54,6 @@ class NMHeartBeatHandlerSpec extends FGSTestBaseSpec {
     def fgsContainer2 = getFGSContainer(zeroNM, 2, 1, 1024, ContainerState.COMPLETE)
     def fgsContainer3 = getFGSContainer(zeroNM, 3, 1, 1024, ContainerState.RUNNING)
 
-    def executorID = Protos.ExecutorID.newBuilder().setValue("myriad_executortest_host_slave_id").build()
     addOfferToFeed(slaveId, host, 2, 2048)
 
     def yarnNodeCapacityManager = Mock(YarnNodeCapacityManager)
@@ -80,7 +71,6 @@ class NMHeartBeatHandlerSpec extends FGSTestBaseSpec {
     then:
     nodeStore.getNode(host).getContainerSnapshot().size() == 3
     1 * yarnNodeCapacityManager.setNodeCapacity(zeroNM, Resources.createResource(4096, 4))
-    3 * mesosDriver.sendFrameworkMessage(executorID, slaveId, _ as byte[])
   }
 
 

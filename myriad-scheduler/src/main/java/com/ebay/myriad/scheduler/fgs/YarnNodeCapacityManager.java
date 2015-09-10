@@ -3,7 +3,6 @@ package com.ebay.myriad.scheduler.fgs;
 import com.ebay.myriad.executor.ContainerTaskStatusRequest;
 import com.ebay.myriad.scheduler.MyriadDriver;
 import com.ebay.myriad.scheduler.SchedulerUtils;
-import com.ebay.myriad.scheduler.TaskFactory;
 import com.ebay.myriad.scheduler.yarn.interceptor.BaseInterceptor;
 import com.ebay.myriad.scheduler.yarn.interceptor.InterceptorRegistry;
 import com.ebay.myriad.state.SchedulerState;
@@ -13,7 +12,6 @@ import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.NodeId;
@@ -53,7 +51,6 @@ public class YarnNodeCapacityManager extends BaseInterceptor {
     private final MyriadDriver myriadDriver;
     private final OfferLifecycleManager offerLifecycleMgr;
     private final NodeStore nodeStore;
-    private final TaskFactory taskFactory;
     private final SchedulerState state;
 
     @Inject
@@ -61,7 +58,6 @@ public class YarnNodeCapacityManager extends BaseInterceptor {
                                    AbstractYarnScheduler yarnScheduler,
                                    RMContext rmContext,
                                    MyriadDriver myriadDriver,
-                                   TaskFactory taskFactory,
                                    OfferLifecycleManager offerLifecycleMgr,
                                    NodeStore nodeStore,
                                    SchedulerState state) {
@@ -71,7 +67,6 @@ public class YarnNodeCapacityManager extends BaseInterceptor {
         this.yarnScheduler = yarnScheduler;
         this.rmContext = rmContext;
         this.myriadDriver = myriadDriver;
-        this.taskFactory = taskFactory;
         this.offerLifecycleMgr = offerLifecycleMgr;
         this.nodeStore = nodeStore;
         this.state = state;
